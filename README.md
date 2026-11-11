@@ -4,7 +4,7 @@
 
 Companies pay security professionals to protect them. Most people can't, yet they face the same scams: fake bank and delivery texts, impersonation calls, tech-support scams, deepfakes and voice clones, sextortion and identity theft. This project is a **free, open-source assistant for the public** (US focus) that **checks suspicious messages, explains how attacks work, monitors cyber-threat news by attack type, sector and location, and tells people what to do and where to report**.
 
-**▶ Live demo:** _link added after deployment_
+**▶ Live demo:** https://cyber-threat-intelligence-kslcmpt484cbstve8ukibo.streamlit.app
 
 ![Scam checker](docs/scam_checker.png)
 
