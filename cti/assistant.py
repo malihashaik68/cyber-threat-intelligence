@@ -20,6 +20,7 @@ import pandas as pd
 
 from cti.knowledge.content import documents
 from cti.news.geo import COUNTRIES, US_CITIES, US_STATES
+from cti.news.search import closest_matches, describe, filter_news, top_articles
 from cti.news.taxonomy import ATTACK_TYPES, SECTORS, detect_attack_types, detect_sectors
 
 LLM_MODEL = os.getenv("CTI_LLM_MODEL", "Qwen/Qwen2.5-0.5B-Instruct")
@@ -43,7 +44,8 @@ def _ans(text, method, sources=None, extra=None):
 def _match_filters(q: str) -> dict:
     states = [s for s in US_STATES if re.search(rf"\b{re.escape(s)}\b", q, re.I)]
     states += [US_CITIES[c] for c in US_CITIES if re.search(rf"\b{re.escape(c)}\b", q, re.I)]
-    countries = sorted({v for k, v in COUNTRIES.items() if len(k) > 3 and re.search(rf"\b{re.escape(k)}\b", q, re.I)})
+    no_states = re.sub("|".join(rf"\b{re.escape(s)}\b" for s in US_STATES), " ", q, flags=re.I)  # New Mexico != Mexico
+    countries = sorted({v for k, v in COUNTRIES.items() if len(k) > 3 and re.search(rf"\b{re.escape(k)}\b", no_states, re.I)})
     attacks = detect_attack_types(q)
     attacks = [a for a in attacks if a != "Hacking / cyberattack (general)"] or attacks
     attacks += [a for a in ATTACK_TYPES if a.split(" ")[0].lower() in q.lower() and a not in attacks]
@@ -56,19 +58,31 @@ def answer_from_news(q: str, news: pd.DataFrame) -> dict | None:
     f = _match_filters(q)
     if not any(f.values()) or not DATA_WORDS.search(q):
         return None
-    df = news
-    for col in ("states", "countries", "attack_types", "sectors"):
-        if f[col]:
-            df = df.loc[df[col].map(lambda vals, want=set(f[col]): bool(want & set(vals))).astype(bool)]
-    label = ", ".join(v for vals in f.values() for v in vals)
+    df = filter_news(news, f)
+    label = describe(f)
     if df.empty:
-        return _ans(f"No articles in the current dataset match: {label}. (Dataset: {len(news)} articles; "
-                    "fetch the latest news for up-to-date results.)", "threat data")
+        lines = [f"None of the current {len(news)} news articles match {label}. This is based on news coverage, "
+                 "so it doesn't mean no cases happened."]
+        groups = closest_matches(news, f)
+        sources = []
+        for glabel, g in groups:
+            lines.append(f"Closest match: **{glabel}**, {len(g)} article{'s' if len(g) != 1 else ''}:")
+            top = top_articles(g, 3)
+            lines += [f"- [{r.severity}] {r.title} ({r.source}, {str(r.date)[:10]})" for r in top.itertuples()]
+            sources += [f"{r.source}: {r.title}" for r in top.itertuples()]
+        if not groups:
+            top = top_articles(news, 3)
+            lines.append("Top headlines in the current news:")
+            lines += [f"- [{r.severity}] {r.title} ({r.source}, {str(r.date)[:10]})" for r in top.itertuples()]
+            sources += [f"{r.source}: {r.title}" for r in top.itertuples()]
+        if f["attack_types"]:
+            lines.append(f"Want to know how {f['attack_types'][0]} attacks work and what to do? Ask me, "
+                         "or open the Learn tab.")
+        return _ans("\n".join(lines), "threat data", sources, {"filters": f})
     sev = Counter(df["severity"])
     lines = [f"**{len(df)} of {len(news)} articles** match {label}. Severity: "
              + ", ".join(f"{k} {sev[k]}" for k in ["CRITICAL", "HIGH", "MEDIUM", "LOW"] if sev[k]) + "."]
-    order = {"CRITICAL": 0, "HIGH": 1, "MEDIUM": 2, "LOW": 3}
-    top = df.assign(_o=df["severity"].map(order)).sort_values(["_o", "date"], ascending=[True, False]).head(5)
+    top = top_articles(df)
     if not f["attack_types"]:
         common = Counter(a for vals in df["attack_types"] for a in vals).most_common(3)
         if common:

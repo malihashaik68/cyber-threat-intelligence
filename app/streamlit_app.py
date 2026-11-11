@@ -23,6 +23,7 @@ from cti import assistant  # noqa: E402
 from cti.knowledge.content import DEEPFAKE_SITUATIONS, LESSONS, PLAYBOOKS, RESOURCES, SPOTTING_TIPS  # noqa: E402
 from cti.news.analyze import analyze_articles, load_snapshot  # noqa: E402
 from cti.news.collect import fetch_latest, keys_configured  # noqa: E402
+from cti.news.search import closest_matches, describe, filter_news, top_articles  # noqa: E402
 from cti.news.taxonomy import ATTACK_TYPES  # noqa: E402
 from cti.scam.checker import check_message, model_metrics  # noqa: E402
 
@@ -162,14 +163,26 @@ with tabs[2]:
     sev_pick = c1.multiselect("Severity", SEV_ORDER, default=SEV_ORDER)
     type_pick = c2.multiselect("Attack type", list(ATTACK_TYPES))
     state_pick = c3.multiselect("US state", sorted(STATE_CODES))
-    df = news[news["severity"].isin(sev_pick)]
-    if type_pick:
-        df = df.loc[df["attack_types"].map(lambda v: bool(set(v) & set(type_pick))).astype(bool)]
-    if state_pick:
-        df = df.loc[df["states"].map(lambda v: bool(set(v) & set(state_pick))).astype(bool)]
+    filters = {"severity": sev_pick if set(sev_pick) != set(SEV_ORDER) else [],
+               "attack_types": type_pick, "states": state_pick}
+    df = filter_news(news, filters)
     if df.empty:
-        st.info("No articles match these filters right now. Try removing a filter, or check again later: "
-                "news is refreshed every 30 minutes.")
+        st.info(f"None of the current {len(news)} news articles match **{describe(filters) or 'these filters'}**. "
+                "This is based on news coverage, so it doesn't mean no cases happened.")
+        groups = closest_matches(news, filters)
+        if groups:
+            st.markdown("#### Closest real matches")
+        for label, g in groups:
+            st.markdown(f"**{label}**: {len(g)} article{'s' if len(g) != 1 else ''}")
+            for r in top_articles(g).itertuples():
+                title = f"[{r.title}]({r.url})" if isinstance(r.url, str) and r.url.startswith("http") else r.title
+                st.markdown(f"- `{r.severity}` {title} · {r.source}, {str(r.date)[:10]}")
+        if not groups:
+            st.markdown("#### Top headlines in the current news")
+            for r in top_articles(news).itertuples():
+                title = f"[{r.title}]({r.url})" if isinstance(r.url, str) and r.url.startswith("http") else r.title
+                st.markdown(f"- `{r.severity}` {title} · {r.source}, {str(r.date)[:10]}")
+        st.caption("See the 📚 Learn and 🎭 Deepfake help tabs for how these attacks work and what to do.")
     else:
         sev = Counter(df["severity"])
         k = st.columns(5)

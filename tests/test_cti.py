@@ -95,7 +95,10 @@ def test_assistant_refuses_offensive_requests():
 def test_assistant_answers_from_threat_data():
     a = assistant.ask("Which data breaches were reported recently?", NEWS, use_llm=False)
     assert a["method"] == "threat data" and "match Data breach" in a["answer"]
-    assert assistant.ask("Any ransomware attacks in Texas?", NEWS)["answer"].startswith("No articles")
+    a = assistant.ask("Any data breaches in Texas?", NEWS)
+    assert a["answer"].startswith("None of the current") and "Closest match: **Data breach (any state)**" in a["answer"]
+    a = assistant.ask("Any ransomware attacks in Texas?", NEWS)  # nothing close: top headlines instead
+    assert "Top headlines" in a["answer"] and a["sources"]
 
 
 def test_assistant_routes_pasted_messages_to_checker():
@@ -137,4 +140,22 @@ def test_filters_that_match_nothing_do_not_crash():
                          "severity": ["HIGH"], "states": [["Texas"]], "countries": [[]],
                          "attack_types": [["Ransomware"]], "sectors": [["Healthcare"]]})
     r = answer_from_news("Any deepfake attacks in Arkansas?", news)
-    assert r is not None and "No articles" in r["answer"]
+    assert r is not None and "None of the current 1 news articles" in r["answer"]
+    # ransomware in Arkansas falls back to ransomware in any state
+    r = answer_from_news("Any ransomware attacks in Arkansas?", news)
+    assert "Closest match" in r["answer"] and "Texas hospital" in r["answer"]
+
+
+def test_closest_matches_drop_one_filter_at_a_time():
+    import pandas as pd
+    from cti.news.search import closest_matches, filter_news
+
+    news = pd.DataFrame({"title": ["Deepfake scam in California", "Ransomware hits Alaska utility"],
+                         "source": ["X", "Y"], "date": ["2026-01-02", "2026-01-01"], "severity": ["HIGH", "LOW"],
+                         "states": [["California"], ["Alaska"]], "attack_types": [["Deepfake & AI abuse"], ["Ransomware"]]})
+    f = {"severity": [], "attack_types": ["Deepfake & AI abuse"], "states": ["Alaska"]}
+    assert filter_news(news, f).empty
+    groups = dict(closest_matches(news, f))
+    assert list(groups["Deepfake & AI abuse (any state)"]["title"]) == ["Deepfake scam in California"]
+    assert list(groups["Alaska (any attack type)"]["title"]) == ["Ransomware hits Alaska utility"]
+    assert closest_matches(news, {"attack_types": ["Phishing"]}) == []
