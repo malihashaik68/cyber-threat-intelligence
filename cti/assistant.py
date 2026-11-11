@@ -59,7 +59,7 @@ def answer_from_news(q: str, news: pd.DataFrame) -> dict | None:
     df = news
     for col in ("states", "countries", "attack_types", "sectors"):
         if f[col]:
-            df = df[df[col].map(lambda vals, want=set(f[col]): bool(want & set(vals)))]
+            df = df.loc[df[col].map(lambda vals, want=set(f[col]): bool(want & set(vals))).astype(bool)]
     label = ", ".join(v for vals in f.values() for v in vals)
     if df.empty:
         return _ans(f"No articles in the current dataset match: {label}. (Dataset: {len(news)} articles; "

@@ -127,3 +127,14 @@ def test_knowledge_base_is_complete():
     for l in LESSONS.values():
         assert l["what"] and l["how"] and l["signs"] and l["protect"]
     assert any("ic3.gov" in d["text"] for d in documents())
+
+
+def test_filters_that_match_nothing_do_not_crash():
+    import pandas as pd
+    from cti.assistant import answer_from_news
+
+    news = pd.DataFrame({"title": ["Ransomware hits Texas hospital"], "source": ["X"], "date": ["2026-01-01"],
+                         "severity": ["HIGH"], "states": [["Texas"]], "countries": [[]],
+                         "attack_types": [["Ransomware"]], "sectors": [["Healthcare"]]})
+    r = answer_from_news("Any deepfake attacks in Arkansas?", news)
+    assert r is not None and "No articles" in r["answer"]

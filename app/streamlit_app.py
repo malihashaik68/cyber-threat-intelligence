@@ -164,57 +164,60 @@ with tabs[2]:
     state_pick = c3.multiselect("US state", sorted(STATE_CODES))
     df = news[news["severity"].isin(sev_pick)]
     if type_pick:
-        df = df[df["attack_types"].map(lambda v: bool(set(v) & set(type_pick)))]
+        df = df.loc[df["attack_types"].map(lambda v: bool(set(v) & set(type_pick))).astype(bool)]
     if state_pick:
-        df = df[df["states"].map(lambda v: bool(set(v) & set(state_pick)))]
+        df = df.loc[df["states"].map(lambda v: bool(set(v) & set(state_pick))).astype(bool)]
+    if df.empty:
+        st.info("No articles match these filters right now. Try removing a filter, or check again later: "
+                "news is refreshed every 30 minutes.")
+    else:
+        sev = Counter(df["severity"])
+        k = st.columns(5)
+        k[0].metric("Articles", len(df))
+        for i, s in enumerate(SEV_ORDER, 1):
+            k[i].metric(s.title(), sev.get(s, 0))
+        alerts = df[df["severity"].isin(["CRITICAL", "HIGH"])]
+        if len(alerts):
+            st.markdown("#### 🚨 Alerts: high-risk incidents")
+            for r in alerts.sort_values("severity").head(5).itertuples():
+                (st.error if r.severity == "CRITICAL" else st.warning)(
+                    f"**{r.severity}**: {r.title}  \n{r.source}, {str(r.date)[:10]} · Why: {', '.join(r.severity_reasons)}")
 
-    sev = Counter(df["severity"])
-    k = st.columns(5)
-    k[0].metric("Articles", len(df))
-    for i, s in enumerate(SEV_ORDER, 1):
-        k[i].metric(s.title(), sev.get(s, 0))
-    alerts = df[df["severity"].isin(["CRITICAL", "HIGH"])]
-    if len(alerts):
-        st.markdown("#### 🚨 Alerts: high-risk incidents")
-        for r in alerts.sort_values("severity").head(5).itertuples():
-            (st.error if r.severity == "CRITICAL" else st.warning)(
-                f"**{r.severity}**: {r.title}  \n{r.source}, {str(r.date)[:10]} · Why: {', '.join(r.severity_reasons)}")
+        c1, c2 = st.columns(2)
+        with c1:
+            states = Counter(s for v in df["states"] for s in v)
+            if states:
+                sdf = pd.DataFrame({"state": list(states), "articles": list(states.values())})
+                sdf["code"] = sdf["state"].map(STATE_CODES)
+                fig = px.choropleth(sdf, locations="code", locationmode="USA-states", color="articles", scope="usa",
+                                    hover_name="state", color_continuous_scale="Reds", title="US states in the news")
+                st.plotly_chart(fig, width="stretch")
+            else:
+                st.info("No US states mentioned in these articles yet. Live news (US edition) adds more US coverage.")
+        with c2:
+            countries = Counter(c for v in df["countries"] for c in v)
+            if countries:
+                cdf = pd.DataFrame({"country": list(countries), "articles": list(countries.values())})
+                fig = px.choropleth(cdf, locations="country", locationmode="country names", color="articles",
+                                    color_continuous_scale="Reds", title="Countries in the news")
+                st.plotly_chart(fig, width="stretch")
+        c1, c2 = st.columns(2)
+        with c1:
+            at = Counter(a for v in df["attack_types"] for a in v)
+            if at:
+                st.plotly_chart(px.bar(x=list(at.values()), y=list(at.keys()), orientation="h",
+                                       labels={"x": "articles", "y": ""}, title="Attack types"), width="stretch")
+        with c2:
+            rows = [(s, r.severity) for r in df.itertuples() for s in r.sectors]
+            if rows:
+                sec = pd.DataFrame(rows, columns=["sector", "severity"]).value_counts().reset_index(name="articles")
+                st.plotly_chart(px.bar(sec, x="articles", y="sector", color="severity", orientation="h",
+                                       color_discrete_map=SEV_COLOR, title="Most exposed sectors (by severity)"),
+                                width="stretch")
+        st.dataframe(df[["date", "severity", "title", "attack_types", "sectors", "states", "countries", "source"]]
+                     .sort_values("date", ascending=False), hide_index=True, width="stretch")
 
-    c1, c2 = st.columns(2)
-    with c1:
-        states = Counter(s for v in df["states"] for s in v)
-        if states:
-            sdf = pd.DataFrame({"state": list(states), "articles": list(states.values())})
-            sdf["code"] = sdf["state"].map(STATE_CODES)
-            fig = px.choropleth(sdf, locations="code", locationmode="USA-states", color="articles", scope="usa",
-                                hover_name="state", color_continuous_scale="Reds", title="US states in the news")
-            st.plotly_chart(fig, width="stretch")
-        else:
-            st.info("No US states mentioned in these articles yet. Live news (US edition) adds more US coverage.")
-    with c2:
-        countries = Counter(c for v in df["countries"] for c in v)
-        if countries:
-            cdf = pd.DataFrame({"country": list(countries), "articles": list(countries.values())})
-            fig = px.choropleth(cdf, locations="country", locationmode="country names", color="articles",
-                                color_continuous_scale="Reds", title="Countries in the news")
-            st.plotly_chart(fig, width="stretch")
-    c1, c2 = st.columns(2)
-    with c1:
-        at = Counter(a for v in df["attack_types"] for a in v)
-        if at:
-            st.plotly_chart(px.bar(x=list(at.values()), y=list(at.keys()), orientation="h",
-                                   labels={"x": "articles", "y": ""}, title="Attack types"), width="stretch")
-    with c2:
-        rows = [(s, r.severity) for r in df.itertuples() for s in r.sectors]
-        if rows:
-            sec = pd.DataFrame(rows, columns=["sector", "severity"]).value_counts().reset_index(name="articles")
-            st.plotly_chart(px.bar(sec, x="articles", y="sector", color="severity", orientation="h",
-                                   color_discrete_map=SEV_COLOR, title="Most exposed sectors (by severity)"),
-                            width="stretch")
-    st.dataframe(df[["date", "severity", "title", "attack_types", "sectors", "states", "countries", "source"]]
-                 .sort_values("date", ascending=False), hide_index=True, width="stretch")
-
-# ----------------------------------------------------------------- learn
+    # ----------------------------------------------------------------- learn
 with tabs[3]:
     st.subheader("Learn how attacks work, and how to protect yourself")
     for title, l in LESSONS.items():
