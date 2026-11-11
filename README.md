@@ -16,12 +16,12 @@ Companies pay security professionals to protect them. Most people can't, yet the
 | 🔍 **Scam checker** | Paste a text, email or link → verdict, **ML probability**, red flags with the exact words, scam type (bank, delivery, toll, IRS/SSA, tech support, prize, job, crypto, romance, family emergency) and link analysis (look-alike domains, shorteners, risky TLDs) |
 | 🗺️ **Threat monitor** | NLP over live cyber news (GNews + The Guardian): attack types, **US states and cities**, countries, sectors, sentiment, emotion, organisations (NER) and **severity with reasons**; maps, alerts for high-risk incidents, filters |
 | 📚 **Learn** | How phishing, impersonation, tech-support, romance/crypto, ransomware, identity theft, deepfakes and sextortion work, warning signs and protection (defensive only) |
-| 🎭 **Deepfake help** | Guided checklist, image **metadata** check (camera, editing software, AI-generator traces), **Content Credentials (C2PA)** detection, **Error Level Analysis**, reverse-image-search links, voice-clone safety, and help if someone faked you |
+| 🎭 **Deepfake help** | Step-by-step guidance by situation: **blackmail with a fake (or real) intimate image**, a fake of you being shared, voice-clone calls, fake celebrity endorsements, fake dating photos, viral fakes; plus how to spot a fake. **No uploads**: never upload intimate images to any website |
 | 🆘 **I've been scammed** | Step-by-step playbooks (clicked a link, paid a scammer, identity theft, fake images, family-emergency call, ransomware) and where to report: FTC, IdentityTheft.gov, FBI IC3, StopNCII, NCMEC Take It Down |
 
 <p>
 <img src="docs/threat_monitor.png" width="49%" alt="Threat monitor">
-<img src="docs/deepfake.png" width="49%" alt="Deepfake help">
+<img src="docs/deepfake_help.png" width="49%" alt="Deepfake help">
 </p>
 
 ## Scam classifier
@@ -74,13 +74,13 @@ Live news (optional): get free keys from [gnews.io](https://gnews.io) and [The G
 pytest -q
 ```
 
-23 tests in about 2 seconds, without model downloads: location and attack-type detection (including the "UK"/"Ukraine" and "New Mexico" cases), severity, scam verdicts and explanations, link analysis, assistant routing and refusals, the LLM grounding check, deepfake metadata checks and the knowledge base. GitHub Actions runs them on every push.
+23 tests in about 2 seconds, without model downloads: location and attack-type detection (including the "UK"/"Ukraine" and "New Mexico" cases), severity, scam verdicts and explanations, link analysis, assistant routing and refusals, the LLM grounding check, the deepfake-blackmail guidance and the knowledge base. GitHub Actions runs them on every push.
 
 ## Honest limits
 
 - **Not professional security or legal advice.** Always verify through an official channel.
 - The threat map counts **news coverage**, not official crime statistics; no free real-time source gives cybercrime by city.
-- **Deepfake checks give evidence, not proof.** Missing metadata is normal for screenshots; ELA is noisy on compressed images.
+- **No image analysis by design.** Deepfake detection is unreliable, and people shouldn't upload sensitive images to websites; the app gives situation-specific guidance instead (StopNCII.org protects images without uploading them).
 - The scam model is trained on public datasets (some older, some marketing spam), so new scam wording can slip through: that's why the rule layer and advice exist.
 - The local LLM is small; it only rephrases retrieved guidance and is rejected when it adds content.
 - Defensive use only: the assistant refuses requests to attack, phish or impersonate anyone.
@@ -93,7 +93,6 @@ cti/assistant.py              routing, retrieval, local LLM + grounding check, r
 cti/scam/                     classifier training + checker (red flags, scam types, links)
 cti/news/                     news collection, NLP analysis, locations, attack/sector taxonomy
 cti/knowledge/content.py      lessons, recovery playbooks, official US resources
-cti/deepfake.py               metadata, AI traces, C2PA, Error Level Analysis, checklist
 models/                       trained scam model + metrics
 data/news_snapshot.csv        analysed 60-article snapshot
 notebooks/                    original research notebook
@@ -102,4 +101,4 @@ tests/                        pytest suite
 
 ## Tech stack
 
-Python · scikit-learn · Hugging Face Transformers (DistilBERT, DistilRoBERTa, BERT NER, Qwen2.5) · Sentence-Transformers · VADER · pandas · Plotly · Streamlit · Pillow · GNews & Guardian APIs · pytest · GitHub Actions
+Python · scikit-learn · Hugging Face Transformers (DistilBERT, DistilRoBERTa, BERT NER, Qwen2.5) · Sentence-Transformers · VADER · pandas · Plotly · Streamlit · GNews & Guardian APIs · pytest · GitHub Actions

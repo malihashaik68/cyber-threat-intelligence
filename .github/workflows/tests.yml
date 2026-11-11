@@ -13,5 +13,5 @@ jobs:
         with:
           python-version: "3.12"
       # Tests don't load transformer models, so torch/transformers are not needed here.
-      - run: pip install "scikit-learn==1.9.1" joblib pandas numpy requests pillow pytest pyarrow
+      - run: pip install "scikit-learn==1.9.1" joblib pandas numpy requests pytest pyarrow
       - run: pytest -q

@@ -1,14 +1,10 @@
 """Fast tests (no transformer downloads): locations, attack types, severity, scam checker,
 assistant routing and safety, deepfake checks, knowledge base."""
-import io
-
 import pandas as pd
 import pytest
-from PIL import Image, PngImagePlugin
 
 from cti import assistant
-from cti.deepfake import error_level_analysis, inspect_image
-from cti.knowledge.content import LESSONS, PLAYBOOKS, documents
+from cti.knowledge.content import DEEPFAKE_SITUATIONS, LESSONS, PLAYBOOKS, documents
 from cti.news.analyze import analyze_articles, article_text, load_snapshot, severity
 from cti.news.geo import detect_locations
 from cti.news.taxonomy import detect_attack_types, detect_sectors
@@ -119,21 +115,11 @@ def test_assistant_knowledge_path_without_llm(monkeypatch):
 
 
 # --------------------------------------------------------------- deepfake
-def _png(**text):
-    img, buf = Image.new("RGB", (64, 48), (90, 120, 170)), io.BytesIO()
-    meta = PngImagePlugin.PngInfo()
-    for k, v in text.items():
-        meta.add_text(k, v)
-    img.save(buf, "PNG", pnginfo=meta)
-    return buf.getvalue()
-
-
-def test_deepfake_detects_ai_traces_and_missing_metadata():
-    r = inspect_image(_png(parameters="portrait, Negative prompt: blurry, Steps: 30, Sampler: Euler a"))
-    assert r["ai_markers"] and r["findings"][0][0] == "high"
-    plain = inspect_image(_png())
-    assert "No metadata" in plain["findings"][0][1]
-    assert error_level_analysis(_png()).size == (64, 48)
+def test_deepfake_blackmail_guidance_covers_the_essentials():
+    steps = " ".join(DEEPFAKE_SITUATIONS["I'm being blackmailed with a fake (or real) intimate image or video"]["steps"])
+    for must in ["Don't pay", "Save evidence", "StopNCII.org", "Take It Down", "ic3.gov", "988"]:
+        assert must in steps
+    assert any(d["kind"] == "deepfake help" for d in documents())   # the assistant can retrieve it
 
 
 def test_knowledge_base_is_complete():

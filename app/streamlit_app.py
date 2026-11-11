@@ -6,7 +6,6 @@ Optional secrets: GNEWS_API_KEY, GUARDIAN_API_KEY (live news), CTI_USE_LLM ("0" 
 """
 from __future__ import annotations
 
-import io
 import os
 import sys
 from collections import Counter
@@ -21,8 +20,7 @@ import plotly.express as px  # noqa: E402
 import streamlit as st  # noqa: E402
 
 from cti import assistant  # noqa: E402
-from cti.deepfake import CHECKLIST, error_level_analysis, inspect_image  # noqa: E402
-from cti.knowledge.content import LESSONS, PLAYBOOKS, RESOURCES  # noqa: E402
+from cti.knowledge.content import DEEPFAKE_SITUATIONS, LESSONS, PLAYBOOKS, RESOURCES, SPOTTING_TIPS  # noqa: E402
 from cti.news.analyze import analyze_articles, load_snapshot  # noqa: E402
 from cti.news.collect import fetch_latest, keys_configured  # noqa: E402
 from cti.news.taxonomy import ATTACK_TYPES  # noqa: E402
@@ -221,41 +219,24 @@ with tabs[3]:
 
 # ---------------------------------------------------------------- deepfake
 with tabs[4]:
-    st.subheader("Is this image or video fake?")
-    st.warning("No tool can prove an image is real or fake. These checks give evidence to weigh together.")
-    c1, c2 = st.columns([1, 1])
-    with c1:
-        st.markdown("#### 1. Checklist")
-        score = sum(st.checkbox(f"**{t}**: {q}", key=f"cl{i}") for i, (t, q) in enumerate(CHECKLIST))
-        if score >= 3:
-            st.error(f"{score} warning signs. Treat it as likely manipulated; verify before sharing or acting.")
-        elif score:
-            st.warning(f"{score} warning sign(s). Look for other evidence.")
-        st.markdown("#### 2. Search where it came from")
-        st.markdown("Upload the image to [Google Lens](https://lens.google.com) or [TinEye](https://tineye.com) "
-                    "to see if it appeared earlier or in another context.")
-        st.markdown("#### 3. Voice-clone calls")
-        st.markdown("Hang up and call back on a number you know. Agree a **family safe word** in advance.")
-    with c2:
-        st.markdown("#### 4. Inspect an image file")
-        up = st.file_uploader("Upload a photo (JPG/PNG). It's analysed in memory, not stored.", type=["jpg", "jpeg", "png", "webp"])
-        if up:
-            data = up.getvalue()
-            r = inspect_image(data)
-            st.image(data, caption=f"{r['info']['format']} · {r['info']['size']}", width="stretch")
-            for level, text in r["findings"]:
-                {"high": st.error, "medium": st.warning}.get(level, st.info)(text)
-            with st.expander("Error Level Analysis (ELA)"):
-                st.caption("Bright, blocky areas changed more when re-saved; edited regions sometimes stand out. "
-                           "Screenshots and heavily compressed images give noisy results.")
-                buf = io.BytesIO()
-                error_level_analysis(data).save(buf, "PNG")
-                st.image(buf.getvalue(), width="stretch")
-            if r["exif"]:
-                with st.expander("All metadata"):
-                    st.json(r["exif"])
-    st.markdown("#### Someone made a fake of you?")
-    st.markdown("\n".join(f"{i}. {s}" for i, s in enumerate(PLAYBOOKS["Someone made a fake image or video of me"], 1)))
+    st.subheader("Deepfakes and voice clones: what to do")
+    st.caption("Clear steps for the situation you're in. Nothing is uploaded: never upload intimate images to "
+               "any website. StopNCII.org protects them without the image leaving your device.")
+    situation = st.radio("What's happening?", list(DEEPFAKE_SITUATIONS))
+    d = DEEPFAKE_SITUATIONS[situation]
+    st.info(d["remember"])
+    st.markdown("\n".join(f"{i}. {x}" for i, x in enumerate(d["steps"], 1)))
+    if "law" in d:
+        st.markdown(f"**The law.** {d['law']}")
+    if situation.startswith("I'm being blackmailed"):
+        st.error("If you feel overwhelmed or unsafe right now, call or text **988** (Suicide & Crisis Lifeline), "
+                 "free and 24/7. If you're in immediate danger, call **911**.")
+    st.markdown("#### How to spot a fake")
+    c1, c2 = st.columns(2)
+    for i, (title, tip) in enumerate(SPOTTING_TIPS):
+        (c1 if i % 2 == 0 else c2).markdown(f"**{title}.** {tip}")
+    st.caption("No single sign proves a fake, and good fakes may show none. When money, secrecy or urgency is "
+               "involved, verify through another channel.")
 
 # ------------------------------------------------------------------- help
 with tabs[5]:

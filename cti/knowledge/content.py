@@ -17,6 +17,8 @@ RESOURCES = {
     "AnnualCreditReport.com": ("https://www.annualcreditreport.com", "The official free credit-report site."),
     "Google reverse image search": ("https://lens.google.com", "Check whether an image has appeared online before."),
     "TinEye": ("https://tineye.com", "Reverse image search engine."),
+    "NCMEC CyberTipline": ("https://report.cybertip.org", "Report online sexual exploitation of children, including sextortion."),
+    "988 Suicide & Crisis Lifeline": ("https://988lifeline.org", "Call or text 988, free and 24/7, if you feel overwhelmed or unsafe."),
 }
 
 LESSONS = {
@@ -153,6 +155,98 @@ PLAYBOOKS = {
 }
 
 
+# Deepfake situations: knowledge only (no uploads). Ordered by urgency.
+DEEPFAKE_SITUATIONS = {
+    "I'm being blackmailed with a fake (or real) intimate image or video": {
+        "remember": "You are not at fault, and you are not alone. Fake images are made to scare you into paying "
+                    "fast. Blackmailers usually move on when they don't get paid.",
+        "steps": [
+            "Don't pay and don't negotiate. Paying almost always leads to more demands, not deletion.",
+            "Don't send any more images or information.",
+            "Save evidence BEFORE blocking: screenshots of messages, the account name and profile link, the "
+            "platform, dates, and any payment details (gift card, crypto wallet, payment app) they asked for.",
+            "Stop replying and block the account after you've saved the evidence.",
+            "Report the account and any posted content to the platform (most ban non-consensual intimate images, "
+            "including AI-generated ones).",
+            "Get images blocked from spreading: adults can use StopNCII.org, which creates a digital fingerprint "
+            "on your own device (the image is never uploaded); under 18, use NCMEC Take It Down.",
+            "Report the crime to the FBI at ic3.gov or your local FBI field office. If you're under 18 you can also "
+            "report to the NCMEC CyberTipline (report.cybertip.org). You won't be in trouble for being a victim.",
+            "Tell someone you trust: a friend, family member, school counselor or colleague.",
+            "If you feel overwhelmed or unsafe, call or text 988 (Suicide & Crisis Lifeline), free and 24/7.",
+        ],
+        "law": "A 2025 federal law (the TAKE IT DOWN Act) makes publishing non-consensual intimate images, "
+               "including AI-generated ones, a crime and requires covered platforms to remove reported images "
+               "within 48 hours. Many states also have deepfake and image-abuse laws.",
+    },
+    "A fake image or video of me is being shared (harassment, rumours)": {
+        "remember": "Content that impersonates you or shows you in fake situations usually breaks platform rules.",
+        "steps": [
+            "Save evidence: screenshots, links, account names, dates and where it was shared.",
+            "Report it to each platform using its impersonation, harassment or synthetic-media report option.",
+            "Ask people you trust to report it too, and not to share it, even to 'warn' others.",
+            "If it's intimate content, use StopNCII.org (adults) or NCMEC Take It Down (under 18).",
+            "If it threatens you, damages your work or school life, or keeps happening, report it to local police "
+            "and consider talking to a lawyer; many states have laws covering deepfakes and harassment.",
+            "If it's spreading widely, a short public statement ('this is fake, it has been reported') can help.",
+        ],
+    },
+    "A call or voice message from someone I know asking for money": {
+        "remember": "A few seconds of audio from social media is enough to clone a voice. Urgency is the trick.",
+        "steps": [
+            "Stay calm and hang up, even if the voice sounds exactly right.",
+            "Call the person back on the number you already have, or contact another family member.",
+            "Ask a question only they would know, or use your family safe word.",
+            "Never send gift cards, crypto or wire transfers because of an urgent call.",
+            "Report the call at reportfraud.ftc.gov.",
+            "Agree a family safe word now, before it ever happens.",
+        ],
+    },
+    "A celebrity or official is promoting crypto, money or a product": {
+        "remember": "Fake celebrity videos are a common way to sell scam investments, 'free money' and miracle products.",
+        "steps": [
+            "Treat any celebrity video promising easy money, crypto returns or giveaways as a scam, whether "
+            "or not the video itself is fake.",
+            "Check the person's official, verified accounts or a trusted news source for the same message.",
+            "Never send money, crypto or card details through links in the video or comments.",
+            "Report the ad or video on the platform, and report losses to ic3.gov and reportfraud.ftc.gov.",
+        ],
+    },
+    "An online contact whose photos might be fake (dating, social media)": {
+        "remember": "Romance scammers often use stolen or AI-generated photos and avoid live video.",
+        "steps": [
+            "Run a reverse image search on their photos (Google Lens or TinEye): the same face under other "
+            "names is a red flag.",
+            "Ask for a live video call; repeated excuses are a warning sign.",
+            "Never send money, gift cards or crypto to someone you haven't met in person.",
+            "Be careful sharing intimate photos with new contacts; this is how many sextortion cases start.",
+            "Report the profile to the platform and to reportfraud.ftc.gov.",
+        ],
+    },
+    "A shocking image or video is going around online": {
+        "remember": "Fakes spread fastest during breaking news, elections and disasters.",
+        "steps": [
+            "Pause before sharing; strong emotion is what fakes are designed to trigger.",
+            "Check whether trusted news outlets or official accounts report the same thing.",
+            "Look for the original source; reverse image search can show older versions.",
+            "Look for the warning signs below.",
+            "Don't share it 'just in case'; report it if it's misleading.",
+        ],
+    },
+}
+
+SPOTTING_TIPS = [
+    ("Face and edges", "Blurry, smeared or flickering edges around the face, hair or ears."),
+    ("Eyes", "Unnatural or missing blinking; reflections in the two eyes that don't match."),
+    ("Mouth", "Lips slightly out of sync with the words; teeth that look blurred or odd."),
+    ("Hands and details", "Extra or merged fingers, mismatched earrings or glasses, odd jewellery."),
+    ("Lighting", "Shadows or lighting on the face that don't match the rest of the scene."),
+    ("Background and text", "Garbled text, warped lines, objects that melt or repeat."),
+    ("Voice", "Flat or robotic tone, odd pauses or breathing, unusual word choice."),
+    ("Context", "Pressure to act fast, pay, or keep it secret: the strongest warning sign of all."),
+]
+
+
 def documents() -> list[dict]:
     """Flatten lessons and playbooks into passages for retrieval by the assistant."""
     docs = []
@@ -165,6 +259,11 @@ def documents() -> list[dict]:
     for situation, steps in PLAYBOOKS.items():
         docs.append({"title": situation, "kind": "what to do", "text": f"{situation}. Steps: " + " ".join(
             f"{i}. {s}" for i, s in enumerate(steps, 1))})
+    for situation, d in DEEPFAKE_SITUATIONS.items():
+        docs.append({"title": situation, "kind": "deepfake help", "text": f"{situation}. {d['remember']} Steps: "
+                     + " ".join(f"{i}. {x}" for i, x in enumerate(d["steps"], 1)) + (" " + d["law"] if "law" in d else "")})
+    docs.append({"title": "How to spot a deepfake", "kind": "deepfake help",
+                 "text": "How to spot a deepfake or fake video: " + "; ".join(f"{t}: {x}" for t, x in SPOTTING_TIPS)})
     for name, (url, desc) in RESOURCES.items():
         docs.append({"title": name, "kind": "resource", "text": f"{name} ({url}): {desc}"})
     return docs

@@ -10,7 +10,6 @@ numpy>=1.26
 requests>=2.31
 plotly>=5.20
 streamlit>=1.50
-pillow>=10.1
 vaderSentiment>=3.3
 pyarrow>=14
 # development
