@@ -76,6 +76,13 @@ pytest -q
 
 23 tests in about 2 seconds, without model downloads: location and attack-type detection (including the "UK"/"Ukraine" and "New Mexico" cases), severity, scam verdicts and explanations, link analysis, assistant routing and refusals, the LLM grounding check, the deepfake-blackmail guidance and the knowledge base. GitHub Actions runs them on every push.
 
+## Privacy
+
+- **No personal data is collected.** No accounts, no database, no logging of what people type, and Streamlit usage statistics are turned off. Text is checked in memory and discarded.
+- **No outside AI service.** The scam model and the LLM run on the app's own server.
+- **Users are told not to enter personal details** (names, account numbers, passwords, codes); the checker finds scam signs without them.
+- **Reporting stays with official agencies.** The app doesn't collect complaints; it sends people to the FTC, FBI IC3 and others, which are legally protected channels for sensitive details.
+
 ## Honest limits
 
 - **Not professional security or legal advice.** Always verify through an official channel.

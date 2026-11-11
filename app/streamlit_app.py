@@ -64,6 +64,10 @@ def current_news() -> tuple[pd.DataFrame, str]:
     return snapshot(), f"saved snapshot ({len(snapshot())} articles); add API keys for live news"
 
 
+PRIVACY = ("🔒 **Privacy:** please don't type your name, address, account or card numbers, passwords or codes. "
+           "The app doesn't need them to help you. What you type is checked in memory and never saved, there "
+           "are no accounts, and nothing is sent to an outside AI company.")
+
 # --------------------------------------------------------------- sidebar
 with st.sidebar:
     st.title("🛡️ Cyber Threat Intelligence")
@@ -76,6 +80,7 @@ with st.sidebar:
             live_news.clear()
     else:
         st.info("Using a saved news snapshot. Add GNEWS_API_KEY / GUARDIAN_API_KEY in Secrets for live news.")
+    st.caption("🔒 Nothing you type is saved. No accounts, no tracking.")
     st.caption("Not legal or professional security advice. In an emergency or if you're in danger, call 911.")
     st.markdown("[Source code](https://github.com/malihashaik68/cyber-threat-intelligence)")
 
@@ -96,6 +101,7 @@ with tabs[0]:
     for i, ex in enumerate(examples):
         if cols[i % 3].button(ex, key=f"ex{i}"):
             st.session_state.q = ex
+    st.info(PRIVACY)
     with st.form("ask"):
         q = st.text_input("Your question", value=st.session_state.get("q", ""))
         go = st.form_submit_button("Ask", type="primary")
@@ -113,7 +119,8 @@ with tabs[0]:
 # ---------------------------------------------------------- scam checker
 with tabs[1]:
     st.subheader("Is this a scam?")
-    st.caption("Paste a text message, email or link. Your text is checked in memory and not stored.")
+    st.caption("Paste a text message, email or link.")
+    st.info(PRIVACY + " Before pasting, remove or replace any personal details in the message (e.g. write [my name], [account number]); the scam signs are still detected.")
     samples = {
         "Delivery text": "USPS: Your package could not be delivered due to an incomplete address. Update here within 24 hours: https://usps-redelivery-help.top/track",
         "Bank alert": "Chase Fraud Department: Unusual sign-in detected. Your account will be locked. Reply with the verification code we just sent you.",
@@ -244,5 +251,6 @@ with tabs[5]:
     situation = st.radio("What happened?", list(PLAYBOOKS), horizontal=False)
     st.markdown("\n".join(f"{i}. {s}" for i, s in enumerate(PLAYBOOKS[situation], 1)))
     st.markdown("#### Where to report (US)")
+    st.info("🔒 Give your personal details, evidence and losses **only to the official sites below** (or your bank and the police). They are protected agencies; this app never asks for those details.")
     for name, (url, desc) in RESOURCES.items():
         st.markdown(f"- **[{name}]({url})**: {desc}")
