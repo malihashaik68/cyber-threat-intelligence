@@ -1,0 +1,5 @@
+[theme]
+primaryColor = "#b42318"
+
+[server]
+fileWatcherType = "none"

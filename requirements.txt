@@ -1,0 +1,17 @@
+# CPU-only PyTorch keeps installs small (also used by Streamlit Community Cloud)
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch
+transformers>=4.40
+sentence-transformers>=3.0
+scikit-learn==1.9.1
+joblib>=1.3
+pandas>=2.0
+numpy>=1.26
+requests>=2.31
+plotly>=5.20
+streamlit>=1.50
+pillow>=10.1
+vaderSentiment>=3.3
+pyarrow>=14
+# development
+pytest>=8.0
